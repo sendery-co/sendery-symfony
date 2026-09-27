@@ -2,4 +2,6 @@
 
 ## 0.1.0
 
-Initial template sending, delivery status, and framework integration release.
+- Register the `sendery://` transport for Symfony Mailer.
+- Send `TemplateEmail` messages with keys preserved when queued through Messenger.
+- Inspect API failures through the previous exception on `TransportException`.

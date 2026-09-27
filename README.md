@@ -1,57 +1,98 @@
-# Sendery — Symfony integration
+# Sendery for Symfony
 
-Send template emails from Symfony with the Sendery SDK.
+Send Sendery templates through Symfony Mailer.
 
-MIT licensed. Repository: https://github.com/sendery-co/sendery-symfony
+[Documentation](https://sendery.co/en/docs/symfony) · [API reference](https://sendery.co/en/docs/send-email) · [Changelog](CHANGELOG.md)
 
-Documentation: https://sendery.co/en/docs/symfony
+## Requirements
+
+Symfony Mailer 7.4 and PHP 8.3+ with the cURL extension.
 
 ## Install
 
-```
+```bash
 composer require sendery/symfony:^0.1
 ```
 
-## Install
+## Register the transport
 
-Symfony Mailer 7.4 / PHP 8.3+
+Publish a `welcome` template with `name` and `action_url` variables, and create a [project API key](https://sendery.co/en/docs/authentication). Add the factory to `config/services.yaml`.
 
-## Configure the transport
-
-Register SenderyTransportFactory as a service tagged mailer.transport_factory. Set MAILER_DSN=sendery://YOUR_API_KEY@sendery.co. Use a secret environment variable, never commit the DSN.
-
-## Send template messages
-
-Use TemplateEmail, including from/to for Symfony’s envelope validation. Sendery uses the sender configured on your project. Arbitrary HTML mail and multiple recipients are rejected.
-
-## Queue with Messenger
-
-Symfony Messenger can serialize TemplateEmail with its generated key and variables. Retry the same message on transient failures. The transport wraps Sendery\ApiException in TransportException so a retry strategy can inspect the underlying status and code.
-
-## Configuration example
-
-```
-# config/services.yaml
+```yaml
+# config/services.yaml — add to your existing services section.
 services:
   Sendery\Symfony\SenderyTransportFactory:
     tags: ['mailer.transport_factory']
-
-# .env.local
-MAILER_DSN=sendery://YOUR_API_KEY@sendery.co
 ```
 
-## Example
+## Set the API key
 
+Set `MAILER_DSN` in `.env.local` or your hosting provider’s secret settings.
+
+```dotenv
+MAILER_DSN=sendery://YOUR_PROJECT_API_KEY@sendery.co
 ```
+
+## Configure Mailer
+
+Use the DSN in your existing Mailer configuration.
+
+```yaml
+# config/packages/mailer.yaml
+framework:
+  mailer:
+    dsn: '%env(MAILER_DSN)%'
+```
+
+## Send an email
+
+Inject `MailerInterface` and send a `TemplateEmail`. Symfony requires `from()` for validation; Sendery uses the sender configured on your project. Use one recipient. HTML emails, attachments, and `cc` or `bcc` recipients are not supported.
+
+```php
 use Sendery\Symfony\TemplateEmail;
+use Symfony\Component\Mailer\MailerInterface;
 
-$email = (new TemplateEmail())
-    ->from('hello@your-domain.com')
-    ->to('alex@example.com')
-    ->template('welcome', ['name' => 'Alex']);
-$mailer->send($email);
+final class WelcomeEmails
+{
+    public function __construct(private MailerInterface $mailer) {}
+
+    public function send(string $address, string $name): void
+    {
+        $email = (new TemplateEmail())
+            ->from('hello@your-domain.com')
+            ->to($address)
+            ->template('welcome', [
+                'name' => $name,
+                'action_url' => 'https://example.com/start',
+            ]);
+
+        $this->mailer->send($email);
+    }
+}
 ```
 
-## Retries and queues
+## Send with Messenger
 
-Reuse a prepared email for retries. New requests receive new keys; when reconstructing a request in another process, supply the original key and unchanged data. Keep API keys server-side. Framework mailers send Sendery templates, not arbitrary HTML or attachments.
+With Symfony Messenger and your chosen transport installed, set `MESSENGER_TRANSPORT_DSN` and route mail to `async`. Run `php bin/console messenger:consume async`. The same queued `TemplateEmail` keeps its key and variables on retries.
+
+```yaml
+# config/packages/messenger.yaml
+framework:
+  messenger:
+    transports:
+      async: '%env(MESSENGER_TRANSPORT_DSN)%'
+    routing:
+      'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
+```
+
+## Handle failures
+
+API failures throw `TransportException` with a [`Sendery\ApiException`](https://sendery.co/en/docs/php) as the previous exception. Inspect its `status` and `errorCode`. The transport makes one attempt; configure Messenger to [retry temporary failures](https://sendery.co/en/docs/idempotency) and avoid retrying validation or billing errors.
+
+## More
+
+See [idempotency and retries](https://sendery.co/en/docs/idempotency) for retry conditions, delays, and reusing a key across attempts.
+
+## License
+
+[MIT](LICENSE).
