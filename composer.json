@@ -1,0 +1,27 @@
+{
+  "name": "sendery/symfony",
+  "description": "Sendery symfony template email SDK",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": "^8.3",
+    "sendery/php": "^0.1",
+    "symfony/mailer": "^7.4",
+    "symfony/mime": "^7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Sendery\\Symfony\\": "src/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12.0"
+  },
+  "scripts": {
+    "test": "phpunit --bootstrap vendor/autoload.php tests"
+  },
+  "support": {
+    "source": "https://github.com/sendery-co/sendery-symfony",
+    "issues": "https://github.com/sendery-co/sendery-symfony/issues"
+  }
+}
