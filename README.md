@@ -11,7 +11,7 @@ Symfony Mailer 7.4 and PHP 8.3+ with the cURL extension.
 ## Install
 
 ```bash
-composer require sendery/symfony:^0.1
+composer require sendery/symfony:^0.1.1
 ```
 
 ## Register the transport
@@ -46,7 +46,7 @@ framework:
 
 ## Send an email
 
-Inject `MailerInterface` and send a `TemplateEmail`. Symfony requires `from()` for validation; Sendery uses the sender configured on your project. Use one recipient. HTML emails, attachments, and `cc` or `bcc` recipients are not supported.
+Inject `MailerInterface` and send a `TemplateEmail`. Symfony requires `from()` for validation; Sendery uses the sender configured on your project. Use one recipient. HTML emails and `cc` or `bcc` recipients are not supported.
 
 ```php
 use Sendery\Symfony\TemplateEmail;
@@ -69,6 +69,27 @@ final class WelcomeEmails
         $this->mailer->send($email);
     }
 }
+```
+
+## Attachments
+
+Attach files to `TemplateEmail` with Symfony’s `attach()` method.
+
+Send up to 10 files totaling 5 MB. See the [attachment reference](https://sendery.co/en/docs/send-email#section-5) for supported formats and limits.
+
+```php
+use Sendery\Symfony\TemplateEmail;
+
+$email = (new TemplateEmail())
+    ->from('hello@your-domain.com')
+    ->to('alex@example.com')
+    ->template('welcome', [
+        'name' => 'Alex',
+        'action_url' => 'https://example.com/start',
+    ], idempotencyKey: 'welcome-attachment-123')
+    ->attach(file_get_contents('/path/document.pdf'), 'document.pdf', 'application/pdf');
+
+$mailer->send($email);
 ```
 
 ## Send with Messenger

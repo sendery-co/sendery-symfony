@@ -3,6 +3,7 @@
 namespace Sendery\Symfony;
 
 use Sendery\ApiException;
+use Sendery\Attachment;
 use Sendery\Client;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
@@ -24,8 +25,15 @@ class SenderyTransport extends AbstractTransport
     protected function doSend(SentMessage $message): void
     {
         $email = $message->getOriginalMessage();
-        if (! $email instanceof Email || count($message->getEnvelope()->getRecipients()) !== 1 || $email->getCc() || $email->getBcc() || $email->getAttachments()) {
-            throw new TransportException('Sendery supports one recipient per template email and no attachments.');
+        if (! $email instanceof Email || count($message->getEnvelope()->getRecipients()) !== 1 || $email->getCc() || $email->getBcc()) {
+            throw new TransportException('Sendery supports one recipient per template email, without CC or BCC.');
+        }
+        $attachments = [];
+        foreach ($email->getAttachments() as $part) {
+            if ($part->getDisposition() !== 'attachment') {
+                throw new TransportException('Inline attachments are not supported; use a hosted image in the template.');
+            }
+            $attachments[] = new Attachment($part->getFilename() ?? 'attachment', $part->getBody(), $part->getMediaType().'/'.$part->getMediaSubtype());
         }
         $headers = $email->getHeaders();
         $template = $headers->get('X-Sendery-Template')?->getBodyAsString();
@@ -35,7 +43,7 @@ class SenderyTransport extends AbstractTransport
         }
         $data = json_decode(base64_decode($headers->get('X-Sendery-Data')?->getBodyAsString() ?? '', true) ?: '', true, flags: JSON_THROW_ON_ERROR);
         try {
-            $receipt = $this->client->send($message->getEnvelope()->getRecipients()[0]->getAddress(), $template, $data, $headers->get('X-Sendery-Locale')?->getBodyAsString(), $key);
+            $receipt = $this->client->send($message->getEnvelope()->getRecipients()[0]->getAddress(), $template, $data, $headers->get('X-Sendery-Locale')?->getBodyAsString(), $key, $attachments);
             $message->setMessageId($receipt['id']);
         } catch (ApiException $exception) {
             throw new TransportException($exception->getMessage(), $exception->status, $exception);
