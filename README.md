@@ -16,7 +16,7 @@ composer require sendery/symfony:^0.1.1
 
 ## Register the transport
 
-Publish a `welcome` template with `name` and `action_url` variables, and create a [project API key](https://sendery.co/en/docs/authentication). Add the factory to `config/services.yaml`.
+Create a [project API key](https://sendery.co/en/docs/authentication) and register the transport in `config/services.yaml`.
 
 ```yaml
 # config/services.yaml — add to your existing services section.
@@ -46,36 +46,31 @@ framework:
 
 ## Send an email
 
-Inject `MailerInterface` and send a `TemplateEmail`. Symfony requires `from()` for validation; Sendery uses the sender configured on your project. Use one recipient. HTML emails and `cc` or `bcc` recipients are not supported.
+Pass the recipient, your published template’s key, and its variables to this service. Set `from()` to your project’s sender address.
 
 ```php
 use Sendery\Symfony\TemplateEmail;
 use Symfony\Component\Mailer\MailerInterface;
 
-final class WelcomeEmails
+final class TemplateEmails
 {
     public function __construct(private MailerInterface $mailer) {}
 
-    public function send(string $address, string $name): void
+    public function send(string $address, string $template, array $data): void
     {
         $email = (new TemplateEmail())
             ->from('hello@your-domain.com')
             ->to($address)
-            ->template('welcome', [
-                'name' => $name,
-                'action_url' => 'https://example.com/start',
-            ]);
+            ->template($template, $data);
 
         $this->mailer->send($email);
     }
 }
 ```
 
-## Attachments
+## Send a specific version
 
-Attach files to `TemplateEmail` with Symfony’s `attach()` method.
-
-Send up to 10 files totaling 5 MB. See the [attachment reference](https://sendery.co/en/docs/send-email#section-5) for supported formats and limits.
+Choose a [published template version](https://sendery.co/en/docs/send-email#section-5) to keep sending it after newer versions are published. By default, Sendery uses the latest version.
 
 ```php
 use Sendery\Symfony\TemplateEmail;
@@ -83,10 +78,31 @@ use Sendery\Symfony\TemplateEmail;
 $email = (new TemplateEmail())
     ->from('hello@your-domain.com')
     ->to('alex@example.com')
-    ->template('welcome', [
+    ->template('your-template', [
         'name' => 'Alex',
         'action_url' => 'https://example.com/start',
-    ], idempotencyKey: 'welcome-attachment-123')
+    ])
+    ->version(3);
+
+$mailer->send($email);
+```
+
+## Attachments
+
+Attach files to `TemplateEmail` with Symfony’s `attach()` method.
+
+Send up to 10 files totaling 5 MB. See the [attachment reference](https://sendery.co/en/docs/send-email#section-6) for supported formats and limits.
+
+```php
+use Sendery\Symfony\TemplateEmail;
+
+$email = (new TemplateEmail())
+    ->from('hello@your-domain.com')
+    ->to('alex@example.com')
+    ->template('your-template', [
+        'name' => 'Alex',
+        'action_url' => 'https://example.com/start',
+    ], idempotencyKey: 'your-idempotency-key')
     ->attach(file_get_contents('/path/document.pdf'), 'document.pdf', 'application/pdf');
 
 $mailer->send($email);
@@ -108,11 +124,11 @@ framework:
 
 ## Handle failures
 
-API failures throw `TransportException` with a [`Sendery\ApiException`](https://sendery.co/en/docs/php) as the previous exception. Inspect its `status` and `errorCode`. The transport makes one attempt; configure Messenger to [retry temporary failures](https://sendery.co/en/docs/idempotency) and avoid retrying validation or billing errors.
+A failed send throws `TransportException`. If you use Messenger, [retry temporary failures](https://sendery.co/en/docs/queues) with the same email. Fix [API key, template, or billing errors](https://sendery.co/en/docs/errors) before trying again.
 
 ## More
 
-See [idempotency and retries](https://sendery.co/en/docs/idempotency) for retry conditions, delays, and reusing a key across attempts.
+Learn how to [retry emails without duplicate sends](https://sendery.co/en/docs/idempotency).
 
 ## License
 

@@ -6,6 +6,17 @@ use Symfony\Component\Mime\Email;
 
 class TemplateEmail extends Email
 {
+    public function version(int $version): static
+    {
+        if ($version < 1) {
+            throw new \InvalidArgumentException('Version must be a positive integer.');
+        }
+        $this->getHeaders()->remove('X-Sendery-Version');
+        $this->getHeaders()->addTextHeader('X-Sendery-Version', (string) $version);
+
+        return $this;
+    }
+
     public function template(string $key, array $data, ?string $locale = null, ?string $idempotencyKey = null): static
     {
         foreach (['X-Sendery-Template', 'X-Sendery-Data', 'X-Sendery-Locale', 'X-Sendery-Key'] as $name) {
