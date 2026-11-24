@@ -77,9 +77,9 @@ use Sendery\Symfony\TemplateEmail;
 
 $email = (new TemplateEmail())
     ->from('hello@your-domain.com')
-    ->to('alex@example.com')
+    ->to('steven@example.com')
     ->template('your-template', [
-        'name' => 'Alex',
+        'name' => 'Steven',
         'action_url' => 'https://example.com/start',
     ])
     ->version(3);
@@ -98,9 +98,9 @@ use Sendery\Symfony\TemplateEmail;
 
 $email = (new TemplateEmail())
     ->from('hello@your-domain.com')
-    ->to('alex@example.com')
+    ->to('steven@example.com')
     ->template('your-template', [
-        'name' => 'Alex',
+        'name' => 'Steven',
         'action_url' => 'https://example.com/start',
     ], idempotencyKey: 'your-idempotency-key')
     ->attach(file_get_contents('/path/document.pdf'), 'document.pdf', 'application/pdf');
@@ -147,7 +147,7 @@ $receipt = $sendery->event(
     name: 'account.created',
     objectType: 'account',
     objectId: '842',
-    data: ['email' => 'alex@example.com', 'name' => 'Alex'],
+    data: ['email' => 'steven@example.com', 'name' => 'Steven'],
 )->retry()->send();
 ```
 

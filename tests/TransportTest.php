@@ -17,13 +17,13 @@ class TransportTest extends TestCase
             $data = json_decode($body, true);
             $this->assertSame('welcome', $data['template']);
             $this->assertSame(3, $data['version']);
-            $this->assertSame(['name' => 'Alex'], $data['data']);
+            $this->assertSame(['name' => 'Steven'], $data['data']);
             $this->assertArrayNotHasKey('html', $data);
             $this->assertSame(['filename' => 'invoice.pdf', 'content' => base64_encode("PDF\x00bytes"), 'content_type' => 'application/pdf'], $data['attachments'][0]);
 
             return ['status' => 202, 'body' => '{"id":"msg","status":"queued"}'];
         }));
-        $email = (new TemplateEmail)->from('sender@example.com')->to('alex@example.com')->template('welcome', ['name' => 'Alex'])->version(3)->attach("PDF\x00bytes", 'invoice.pdf', 'application/pdf');
+        $email = (new TemplateEmail)->from('sender@example.com')->to('steven@example.com')->template('welcome', ['name' => 'Steven'])->version(3)->attach("PDF\x00bytes", 'invoice.pdf', 'application/pdf');
         $transport->send($email);
         $transport->send(unserialize(serialize($email)));
         $this->assertSame($keys[0], $keys[1]);
@@ -33,6 +33,6 @@ class TransportTest extends TestCase
     {
         $transport = new SenderyTransport(new Client('secret', 'https://example.com'));
         $this->expectException(TransportException::class);
-        $transport->send((new Email)->from('sender@example.com')->to('alex@example.com')->html('Hello'));
+        $transport->send((new Email)->from('sender@example.com')->to('steven@example.com')->html('Hello'));
     }
 }
