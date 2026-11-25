@@ -28,7 +28,7 @@ class TemplateEmail extends Email
         if ($locale !== null) {
             $this->getHeaders()->addTextHeader('X-Sendery-Locale', $locale);
         }
-        $this->text(' ');
+        $this->text(null)->html(null);
 
         return $this;
     }

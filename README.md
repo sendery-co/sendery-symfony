@@ -44,6 +44,24 @@ framework:
     dsn: '%env(MAILER_DSN)%'
 ```
 
+## Development and staging
+
+Use a **Sandbox** API key for development and staging. Sendery prevents email and workflow delivery from that key, even when the project is live. Production requires a **Live** key and live sending enabled on the project.
+
+To use SMTP or another Symfony transport, set `MAILER_DSN` normally and register this listener. It renders the published Sendery template before the configured transport sends it; choose a test SMTP destination for development.
+
+```yaml
+services:
+  Sendery\Client:
+    arguments: ['%env(SENDERY_API_KEY)%']
+  Sendery\Symfony\TemplateEmailListener:
+    arguments: ['@Sendery\Client']
+    tags:
+      - { name: kernel.event_listener, event: Symfony\Component\Mailer\Event\MessageEvent }
+```
+
+Keep `SENDERY_API_KEY` in your server environment. Rendering is limited to 10 requests per minute per workspace and 100 / 1,000 / 5,000 / 10,000 per calendar month on Free / Starter / Business / Scale or Enterprise. Render errors stop delivery. Direct client calls use the API independently of `MAILER_DSN`.
+
 ## Send an email
 
 Pass the recipient, your published template’s key, and its variables to this service. Set `from()` to your project’s sender address.

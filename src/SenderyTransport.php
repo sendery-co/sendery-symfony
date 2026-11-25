@@ -5,10 +5,12 @@ namespace Sendery\Symfony;
 use Sendery\ApiException;
 use Sendery\Attachment;
 use Sendery\Client;
+use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\RawMessage;
 
 class SenderyTransport extends AbstractTransport
 {
@@ -20,6 +22,16 @@ class SenderyTransport extends AbstractTransport
     public function __toString(): string
     {
         return 'sendery';
+    }
+
+    public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
+    {
+        if ($message instanceof TemplateEmail) {
+            $message = clone $message;
+            $message->text(' ');
+        }
+
+        return parent::send($message, $envelope);
     }
 
     protected function doSend(SentMessage $message): void
